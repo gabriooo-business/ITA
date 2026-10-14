@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discovery Phase Roles & Chart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        discovery: {
+                            900: '#0a0f1d', // Very deep blue/black
+                            800: '#151e32', // Card background
+                            700: '#233253', // Borders
+                            gold: '#fbbf24', // PM / Product
+                            orange: '#f97316', // BD / Market
+                            purple: '#a855f7', // Project Manager
+                            green: '#22c55e', // Technical Owner
+                            teal: '#14b8a6', // Coordinator
+                            blue: '#3b82f6', // Research Contributor
+                            danger: '#fb7185' // Accent for boundaries
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-color: #0a0f1d;
+            color: #e2e8f0;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(251, 191, 36, 0.03), transparent 25%),
+                url('data:image/svg+xml,%3Csvg width=\\'40\\' height=\\'40\\' viewBox=\\'0 0 40 40\\' xmlns=\\'http://www.w3.org/2000/svg\\'%3E%3Cpath d=\\'M0 0h40v40H0V0zm20 20h20v20H20V20zM0 20h20v20H0V20zM20 0h20v20H20V0z\\' fill=\\'%231e293b\\' fill-opacity=\\'0.2\\' fill-rule=\\'evenodd\\'/%3E%3C/svg%3E');
+            background-attachment: fixed;
+        }
+
+        /* Card Setup */
+        .role-card {
+            transition: all 0.3s ease;
+            height: 540px; /* Fixed height for all cards */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .role-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Cover Image Area */
+        .card-cover {
+            height: 120px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden; /* Contains the pattern */
+        }
+        
+        /* Subtle pattern overlay on cover */
+        .card-cover::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url('data:image/svg+xml,%3Csvg width=\\'20\\' height=\\'20\\' viewBox=\\'0 0 20 20\\' xmlns=\\'http://www.w3.org/2000/svg\\'%3E%3Ccircle cx=\\'2\\' cy=\\'2\\' r=\\'1\\' fill=\\'%23ffffff\\' fill-opacity=\\'0.1\\'/%3E%3C/svg%3E');
+            mask-image: linear-gradient(to bottom, white, transparent);
+            -webkit-mask-image: linear-gradient(to bottom, white, transparent);
+        }
+
+        .cover-icon {
+            width: 56px;
+            height: 56px;
+            opacity: 0.95;
+            z-index: 10;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+        }
+
+        /* Assignee Badge floating safely inside the cover */
+        .assignee-badge {
+            position: absolute;
+            bottom: 12px;
+            left: 16px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 4px 12px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+            z-index: 20;
+        }
+
+        /* Custom Scrollbar for Tasks */
+        .scrollable-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+        .scrollable-content::-webkit-scrollbar {
+            width: 4px;
+        }
+        .scrollable-content::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 4px;
+        }
+        .scrollable-content::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.4);
+            border-radius: 4px;
+        }
+        .scrollable-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.7);
+        }
+
+        /* Org Chart Line Drawing */
+        .org-line-vertical {
+            width: 2px;
+            background: #334155;
+            margin: 0 auto;
+        }
+        .org-line-horizontal {
+            height: 2px;
+            background: #334155;
+            width: 100%;
+        }
+
+        /* Tabs Styles */
+        .tab-btn {
+            transition: all 0.3s ease;
+        }
+        .tab-btn.active {
+            background: rgba(30, 41, 59, 0.8);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Folder Styles */
+        .folder-content {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.3s ease-out;
+        }
+        .folder-content.open {
+            grid-template-rows: 1fr;
+        }
+        .folder-inner {
+            overflow: hidden;
+        }
+        .folder-header:hover {
+            background-color: rgba(30, 41, 59, 0.6);
+        }
+        .chevron {
+            transition: transform 0.3s ease;
+        }
+        .folder-content.open + .folder-header .chevron,
+        .folder-header.open .chevron {
+            transform: rotate(90deg);
+        }
+
+        /* File Type Icons */
+        .icon-word { color: #2563eb; } /* Blue for Word */
+        .icon-excel { color: #16a34a; } /* Green for Excel */
+    </style>
+</head>
+<body class="min-h-screen p-6 md:p-8 font-sans antialiased">
+
+    <header class="max-w-7xl mx-auto mb-8 text-center relative z-10">
+        <h1 class="text-3xl md:text-4xl font-bold text-white tracking-tight mb-3">
+            Discovery Phase <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-discovery-gold">Team Structure</span>
+        </h1>
+        <p class="text-slate-400 max-w-2xl mx-auto text-sm">
+            Hierarchy, strategic alignment, and clear ownership boundaries.
+        </p>
+    </header>
+
+    <nav class="max-w-md mx-auto mb-10 relative z-10 flex bg-discovery-900/80 p-1.5 rounded-xl border border-discovery-700/50 backdrop-blur-md">
+        <button onclick="switchTab('roles')" id="tab-roles" class="tab-btn active flex-1 py-2.5 text-sm font-medium rounded-lg text-slate-300 border border-transparent">
+            👥 Team Roles & Chart
+        </button>
+        <button onclick="switchTab('outputs')" id="tab-outputs" class="tab-btn flex-1 py-2.5 text-sm font-medium rounded-lg text-slate-400 hover:text-slate-200 border border-transparent">
+            📁 Discovery Outputs
+        </button>
+    </nav>
+
+    <div id="view-roles" class="block">
+        <!-- Rebuilt Reporting & Coordination Flow Chart -->
+        <section class="max-w-5xl mx-auto mb-16 relative z-10 bg-discovery-800/40 pt-8 pb-10 px-4 rounded-2xl border border-discovery-700/50 backdrop-blur-sm overflow-x-auto">
+            <h2 class="text-center text-slate-400 font-semibold mb-8 text-xs uppercase tracking-widest">Reporting & Coordination Flow</h2>
+            
+            <!-- Tree Container -->
+            <div class="flex flex-col items-center w-full min-w-[700px]">
+                
+                <!-- 1. Project Manager (Top Level) -->
+                <div class="bg-discovery-800 border-2 border-discovery-purple px-6 py-3 rounded-xl shadow-lg z-10 text-center w-64">
+                    <div class="text-sm text-discovery-purple font-bold uppercase tracking-wider mb-1">Project Manager</div>
+                    <div class="text-[11px] text-slate-400">Team Manager</div>
+                </div>
+                
+                <!-- Vertical Drop -->
+                <div class="w-px h-6 bg-[#334155]"></div>
+                <!-- Horizontal Split -->
+                <div class="w-[60%] h-[2px] bg-[#334155]"></div>
+                
+                <!-- Main Split Branches -->
+                <div class="flex justify-between w-[60%]">
+                    
+                    <!-- LEFT BRANCH: Product Side -->
+                    <div class="flex flex-col items-center w-1/2">
+                        <div class="w-px h-6 bg-[#334155]"></div>
+                        
+                        <div class="bg-discovery-800 border-2 border-discovery-gold px-6 py-3 rounded-xl shadow-lg z-10 text-center w-56">
+                            <div class="text-sm text-discovery-gold font-bold uppercase tracking-wider mb-1">Product Manager</div>
+                            <div class="text-[11px] text-slate-400">Discovery Owner</div>
+                        </div>
+
+                        <!-- Split under Product Manager -->
+                        <div class="w-px h-6 bg-[#334155]"></div>
+                        <div class="w-[85%] h-[2px] bg-[#334155]"></div>
+                        
+                        <div class="flex justify-between w-[85%]">
+                            <!-- BD -->
+                            <div class="flex flex-col items-center">
+                                <div class="w-px h-6 bg-[#334155]"></div>
+                                <div class="bg-discovery-800 border border-discovery-orange px-3 py-2 rounded-lg shadow text-center w-36">
+                                    <div class="text-[10px] text-discovery-orange font-bold uppercase">Business Dev</div>
+                                    <div class="text-[9px] text-slate-400">Validation Lead</div>
+                                </div>
+                            </div>
+                            <!-- Coordinator -->
+                            <div class="flex flex-col items-center">
+                                <div class="w-px h-6 bg-[#334155]"></div>
+                                <div class="bg-discovery-800 border border-discovery-teal px-3 py-2 rounded-lg shadow text-center w-36">
+                                    <div class="text-[10px] text-discovery-teal font-bold uppercase">Discovery<br>Coordinator</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT BRANCH: Technical Side -->
+                    <div class="flex flex-col items-center w-1/2">
+                        <div class="w-px h-6 bg-[#334155]"></div>
+                        
+                        <div class="bg-discovery-800 border-2 border-discovery-green px-6 py-3 rounded-xl shadow-lg z-10 text-center w-56">
+                            <div class="text-sm text-discovery-green font-bold uppercase tracking-wider mb-1">Technical Manager</div>
+                            <div class="text-[11px] text-slate-400">Feasibility Study Lead</div>
+                        </div>
+
+                        <!-- Drop under Technical Manager -->
+                        <div class="w-px h-6 bg-[#334155]"></div>
+                        
+                        <div class="flex flex-col items-center">
+                            <div class="bg-discovery-800 border border-discovery-blue px-4 py-2 rounded-lg shadow text-center w-48">
+                                <div class="text-[11px] text-discovery-blue font-bold uppercase">Technical Research<br>Contributor</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </section>
+
+        <main class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10 pb-12">
+
+            <!-- Card 1: Project Manager / Team Manager -->
+            <article class="role-card bg-discovery-800 rounded-xl border border-discovery-700">
+                <div class="card-cover bg-gradient-to-br from-purple-900/40 to-discovery-900 border-b border-purple-900/50">
+                    <!-- Project Management SVG Icon -->
+                    <svg class="cover-icon text-discovery-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                    </svg>
+                    
+                    <div class="assignee-badge">
+                        <div class="w-2 h-2 rounded-full bg-discovery-purple animate-pulse"></div>
+                        <span class="text-[11px] font-semibold text-slate-200">Mohamed El-Sayed</span>
+                    </div>
+                </div>
+
+                <div class="pt-5 px-6 pb-3">
+                    <h3 class="text-lg font-bold text-discovery-purple leading-tight">
+                        Project Manager <br><span class="text-slate-500 text-sm font-normal">/ Team Manager</span>
+                    </h3>
+                </div>
+
+                <div class="px-6 flex-1 overflow-hidden flex flex-col pb-4">
+                    <h4 class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3 flex-shrink-0">Assigned Tasks</h4>
+                    <div class="scrollable-content">
+                        <ul class="space-y-2.5">
+                            <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-purple opacity-70 mt-0.5">▹</span><span>Define team roles, task ownership, and deliverable accountability to prevent duplicate effort and gaps.</span></li>
+                            <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-purple opacity-70 mt-0.5">▹</span><span>Organize team activities into structured tasks, milestones, priorities, and cross-workstream workflows.</span></li>
+                            <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-purple opacity-70 mt-0.5">▹</span><span>Monitor progress against agreed milestones, track deliverable completion, and address execution delays.</span></li>
+                            <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-purple opacity-70 mt-0.5">▹</span><span>Coordinate dependencies between business, product, and technical streams to ensure objective alignment.</span></li>
+                            <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-purple opacity-70 mt-0.5">▹</span><span>Facilitate focused Discovery meetings, establish clear action items and owners, and share progress.</span></li>
+                            <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-purple opacity-70 mt-0.5">▹</span><span>Identify workflow obstacles, resolve coordination dependencies, and track execution risks to resolution.</span></li>
+                            <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-purple opacity-70 mt-0.5">▹</span><span>Ensure deliverables have defined owners, verify documentation completion, and maintain status visibility.</span></li>
+                            <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-purple opacity-70 mt-0.5">▹</span><span>Gather team feedback and resolve workflow bottlenecks to improve coordination efficiency and practices.</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="mx-4 mb-4 p-3 rounded-lg bg-red-950/20 border border-red-900/30 flex-shrink-0">
+                    <h4 class="text-[10px] font-bold text-discovery-danger uppercase tracking-wider mb-1">Ownership Boundary</h4>
+                    <p class="text-[11px] text-slate-400 leading-snug">
+                        Does NOT own day-to-day monitoring of technical task progress (that sits with the Technical Manager).
+                    </p>
+                </div>
+            </article>
+
+            <!-- Card 1: Project Manager / Team Manager (Moved to First) -->
+        <article class="role-card bg-discovery-800 rounded-xl border border-discovery-700">
+            <div class="card-cover bg-gradient-to-br from-amber-900/40 to-discovery-900 border-b border-amber-900/50">
+                <!-- Product/Strategy SVG Icon -->
+                <svg class="cover-icon text-discovery-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.27 6.96L12 12.01l8.73-5.05"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 22.08V12"></path>
+                </svg>
+                
+                <div class="assignee-badge">
+                    <div class="w-2 h-2 rounded-full bg-discovery-gold animate-pulse"></div>
+                    <span class="text-[11px] font-semibold text-slate-200">Mohamed El-Sayed</span>
+                </div>
+            </div>
+
+            <div class="pt-5 px-6 pb-3">
+                <h3 class="text-lg font-bold text-discovery-gold leading-tight">
+                    Product Manager <br><span class="text-slate-500 text-sm font-normal">/ Discovery Owner</span>
+                </h3>
+            </div>
+
+            <div class="px-6 flex-1 overflow-hidden flex flex-col pb-4">
+                <h4 class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3 flex-shrink-0">Assigned Tasks</h4>
+                <div class="scrollable-content">
+                    <ul class="space-y-2.5">
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-gold opacity-70 mt-0.5">▹</span><span>Define and document Discovery objectives, questions, and learning goals.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-gold opacity-70 mt-0.5">▹</span><span>Coordinate with the team to establish the agreed Discovery scope and Guidelines.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-gold opacity-70 mt-0.5">▹</span><span>Use evidence from BD & Market Validation and Technical Feasibility Study to interpret product implications.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-gold opacity-70 mt-0.5">▹</span><span>Translate user needs and evidence into candidate product requirements.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-gold opacity-70 mt-0.5">▹</span><span>Prioritize product requirements and identify/approve Must-have requirements within agreed scope.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-gold opacity-70 mt-0.5">▹</span><span>Ensure proposed deviations/scope changes are brought to team discussion.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-gold opacity-70 mt-0.5">▹</span><span>Ensure agreed outcomes are documented.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-gold opacity-70 mt-0.5">▹</span><span>Use Discovery outputs to support informed recommendation on product's next step.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-gold opacity-70 mt-0.5">▹</span><span>Follow up on Tarek's Discovery Coordinator responsibilities.</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mx-4 mb-4 p-3 rounded-lg bg-red-950/20 border border-red-900/30 flex-shrink-0">
+                <h4 class="text-[10px] font-bold text-discovery-danger uppercase tracking-wider mb-1">Ownership Boundary</h4>
+                <p class="text-[11px] text-slate-400 leading-snug">
+                    Does not replace Technical Owner's responsibility for technical feasibility conclusions. Accountability ≠ unilateral authority to change scope/Guidelines.
+                </p>
+            </div>
+        </article>
+
+        <!-- Card 3: Business Development / Market Validation Lead -->
+        <article class="role-card bg-discovery-800 rounded-xl border border-discovery-700">
+            <div class="card-cover bg-gradient-to-br from-orange-900/40 to-discovery-900 border-b border-orange-900/50">
+                <!-- Market Analysis/Search SVG Icon -->
+                <svg class="cover-icon text-discovery-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.5 7.5v6m3-3h-6"></path>
+                </svg>
+                
+                <div class="assignee-badge">
+                    <div class="w-2 h-2 rounded-full bg-discovery-orange animate-pulse"></div>
+                    <span class="text-[11px] font-semibold text-slate-200">Mohamed El-Sayed</span>
+                </div>
+            </div>
+
+            <div class="pt-5 px-6 pb-3">
+                <h3 class="text-lg font-bold text-discovery-orange leading-tight">
+                    Business Development <br><span class="text-slate-500 text-sm font-normal">/ Market Validation Lead</span>
+                </h3>
+            </div>
+
+            <div class="px-6 flex-1 overflow-hidden flex flex-col pb-4">
+                <h4 class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3 flex-shrink-0">Assigned Tasks</h4>
+                <div class="scrollable-content">
+                    <ul class="space-y-2.5">
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-orange opacity-70 mt-0.5">▹</span><span>Research target market, customer segments, market needs, competitors, and alternatives.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-orange opacity-70 mt-0.5">▹</span><span>Investigate customer problems, usage contexts, purchasing considerations.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-orange opacity-70 mt-0.5">▹</span><span>Develop and validate business hypotheses (demand, differentiation, value proposition).</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-orange opacity-70 mt-0.5">▹</span><span>Investigate commercial considerations: pricing, cost constraints, business model.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-orange opacity-70 mt-0.5">▹</span><span>Coordinate with factories, suppliers, prospective customers for research/validation.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-orange opacity-70 mt-0.5">▹</span><span>Organize market-facing validation activities and document feedback.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-orange opacity-70 mt-0.5">▹</span><span>Assess commercial implications of technical alternatives.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-orange opacity-70 mt-0.5">▹</span><span>Distinguish verified findings from assumptions.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-orange opacity-70 mt-0.5">▹</span><span>Provide evidence-based recommendations on commercial viability.</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mx-4 mb-4 p-3 rounded-lg bg-red-950/20 border border-red-900/30 flex-shrink-0">
+                <h4 class="text-[10px] font-bold text-discovery-danger uppercase tracking-wider mb-1">Ownership Boundary</h4>
+                <p class="text-[11px] text-slate-400 leading-snug">
+                    Owns market investigation & commercial evidence. PM uses evidence for product decisions. Technical Owner remains responsible for technical feasibility.
+                </p>
+            </div>
+        </article>
+
+        <!-- Card 4: Technical Manager / Technical Feasibility Study Lead -->
+        <article class="role-card bg-discovery-800 rounded-xl border border-discovery-700">
+            <div class="card-cover bg-gradient-to-br from-green-900/40 to-discovery-900 border-b border-green-900/50">
+                <!-- Technical/Engineering SVG Icon -->
+                <svg class="cover-icon text-discovery-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                
+                <div class="assignee-badge">
+                    <div class="w-2 h-2 rounded-full bg-discovery-green animate-pulse"></div>
+                    <span class="text-[11px] font-semibold text-slate-200">Mohamed Arafa</span>
+                </div>
+            </div>
+
+            <div class="pt-5 px-6 pb-3">
+                <h3 class="text-lg font-bold text-discovery-green leading-tight">
+                    Technical Manager <br><span class="text-slate-500 text-sm font-normal">/ Technical Feasibility Study Lead</span>
+                </h3>
+            </div>
+
+            <div class="px-6 flex-1 overflow-hidden flex flex-col pb-4">
+                <h4 class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3 flex-shrink-0">Assigned Tasks</h4>
+                <div class="scrollable-content">
+                    <ul class="space-y-2.5">
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-green opacity-70 mt-0.5">▹</span><span>Lead and coordinate technical investigation within agreed Discovery scope.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-green opacity-70 mt-0.5">▹</span><span>Direct technical research work performed by Arafa, Tarek, Omar.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-green opacity-70 mt-0.5">▹</span><span>Coordinate technical team's day-to-day work and monitor technical task progress.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-green opacity-70 mt-0.5">▹</span><span>Consolidate technical evidence and own technical conclusions about feasibility.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-green opacity-70 mt-0.5">▹</span><span>Coordinate with Tarek when technical work/directions need checking against plan.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-green opacity-70 mt-0.5">▹</span><span>Clarify technical implications to support product decisions and collective review.</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mx-4 mb-4 p-3 rounded-lg bg-red-950/20 border border-red-900/30 flex-shrink-0">
+                <h4 class="text-[10px] font-bold text-discovery-danger uppercase tracking-wider mb-1">Ownership Boundary</h4>
+                <p class="text-[11px] text-slate-400 leading-snug">
+                    Owns technical investigation & feasibility conclusions within agreed scope.
+                </p>
+            </div>
+        </article>
+
+        <!-- Card 5: Discovery Coordinator -->
+        <article class="role-card bg-discovery-800 rounded-xl border border-discovery-700">
+            <div class="card-cover bg-gradient-to-br from-teal-900/40 to-discovery-900 border-b border-teal-900/50">
+                <!-- Alignment/Coordination SVG Icon -->
+                <svg class="cover-icon text-discovery-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                </svg>
+                
+                <div class="assignee-badge">
+                    <div class="w-2 h-2 rounded-full bg-discovery-teal animate-pulse"></div>
+                    <span class="text-[11px] font-semibold text-slate-200">Tarek Hejazi</span>
+                </div>
+            </div>
+
+            <div class="pt-5 px-6 pb-3">
+                <h3 class="text-lg font-bold text-discovery-teal leading-tight">
+                    Discovery Coordinator
+                </h3>
+            </div>
+
+            <div class="px-6 flex-1 overflow-hidden flex flex-col pb-4">
+                <h4 class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3 flex-shrink-0">Assigned Tasks</h4>
+                <div class="scrollable-content">
+                    <ul class="space-y-2.5">
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-teal opacity-70 mt-0.5">▹</span><span>Use agreed Discovery baseline as reference for alignment checks.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-teal opacity-70 mt-0.5">▹</span><span>Observe and document differences between agreed plan/scope and work observed.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-teal opacity-70 mt-0.5">▹</span><span>Report deviations and change requests without independently evaluating severity.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-teal opacity-70 mt-0.5">▹</span><span>Maintain Discovery Coordination & Alignment Log (observations, links).</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-teal opacity-70 mt-0.5">▹</span><span>Document outcomes of team discussions and agreed follow-up actions.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-teal opacity-70 mt-0.5">▹</span><span>Coordinate with Tech Owner so investigation stays connected to objectives.</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mx-4 mb-4 p-3 rounded-lg bg-red-950/20 border border-red-900/30 flex-shrink-0">
+                <h4 class="text-[10px] font-bold text-discovery-danger uppercase tracking-wider mb-1">Ownership Boundary</h4>
+                <p class="text-[11px] text-slate-400 leading-snug">
+                    Does NOT track day-to-day technical task progress. Does NOT make technical judgments. Does NOT unilaterally approve scope changes.
+                </p>
+            </div>
+        </article>
+
+        <!-- Card 6: Technical Research Contributor -->
+        <article class="role-card bg-discovery-800 rounded-xl border border-discovery-700">
+            <div class="card-cover bg-gradient-to-br from-blue-900/40 to-discovery-900 border-b border-blue-900/50">
+                <!-- Coding/Building SVG Icon -->
+                <svg class="cover-icon text-discovery-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                </svg>
+                
+                <div class="assignee-badge">
+                    <div class="w-2 h-2 rounded-full bg-discovery-blue animate-pulse"></div>
+                    <span class="text-[11px] font-semibold text-slate-200">Mohamed Arafa, Tarek Hejazi, Omar El-Sersy</span>
+                </div>
+            </div>
+
+            <div class="pt-5 px-6 pb-3">
+                <h3 class="text-lg font-bold text-discovery-blue leading-tight">
+                    Technical Research Contributor
+                </h3>
+            </div>
+
+            <div class="px-6 flex-1 overflow-hidden flex flex-col pb-4">
+                <h4 class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3 flex-shrink-0">Assigned Tasks</h4>
+                <div class="scrollable-content">
+                    <ul class="space-y-2.5">
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-blue opacity-70 mt-0.5">▹</span><span>Carry out assigned technical research and investigation tasks within agreed Discovery scope.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-blue opacity-70 mt-0.5">▹</span><span>Document relevant technical evidence, findings, limitations, questions from assigned work.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-blue opacity-70 mt-0.5">▹</span><span>Coordinate with Technical Lead on technical work.</span></li>
+                        <li class="flex items-start gap-2 text-[13px] text-slate-300"><span class="text-discovery-blue opacity-70 mt-0.5">▹</span><span>Provide findings needed for Technical Feasibility Study.</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mx-4 mb-4 p-3 rounded-lg bg-red-950/20 border border-red-900/30 flex-shrink-0 mt-auto">
+                <h4 class="text-[10px] font-bold text-discovery-danger uppercase tracking-wider mb-1">Ownership Boundary</h4>
+                <p class="text-[11px] text-slate-400 leading-snug">
+                    Contributors contribute evidence and perform assigned work, rather than owning final technical conclusions.
+                </p>
+            </div>
+        </article>
+
+    </main>
+    </div>
+
+    <div id="view-outputs" class="hidden max-w-5xl mx-auto relative z-10 pb-12">
+        
+        <div class="mb-8 p-5 rounded-xl bg-discovery-800/40 border border-discovery-700/50">
+            <h2 class="text-lg font-bold text-white mb-2">Discovery Outputs & Ownership Register</h2>
+            <p class="text-sm text-slate-400 leading-relaxed">
+                Identify the tangible outputs expected from Discovery, who owns each output, which roles contribute, and what evidence indicates completion.
+            </p>
+        </div>
+
+        <div class="space-y-4">
+            
+            <!-- Folder 6: Project Manager / Team Manager (Moved to First) -->
+            <div class="border border-discovery-700/60 rounded-xl bg-discovery-800/30 overflow-hidden backdrop-blur-sm">
+                <div class="folder-header cursor-pointer p-4 flex items-center justify-between bg-discovery-800/50" onclick="toggleFolder('folder-6', this)">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-6 h-6 text-discovery-purple" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
+                        <h3 class="font-bold text-slate-200">Project Manager / Team Manager</h3>
+                        <span class="bg-discovery-900 text-xs text-slate-400 px-2 py-0.5 rounded-full border border-discovery-700">2 Files</span>
+                    </div>
+                    <svg class="chevron w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </div>
+                <div id="folder-6" class="folder-content">
+                    <div class="folder-inner p-4 pt-0 space-y-3">
+                        
+                        <!-- New File: Roles & Responsibilities -->
+                        <div class="flex items-start gap-4 p-3 rounded-lg bg-discovery-900/50 border border-discovery-700/30 hover:border-discovery-purple/30 transition-colors">
+                            <div class="mt-1 icon-word" title="Word Document">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 3v5h5"></path><text x="7" y="16" font-size="6" font-weight="bold" fill="currentColor" stroke="none">DOC</text></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-sm font-bold text-slate-200">Discovery Phase: Roles, Responsibilities & Working Agreement</h4>
+                                    <span class="text-[10px] text-slate-400 bg-discovery-800 px-2 py-1 rounded border border-discovery-700">Contributors: All team members</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-snug">Document detailing team roles, accountabilities, and cross-functional working agreements for the discovery phase.</p>
+                            </div>
+                        </div>
+
+                        <!-- File 13 -->
+                        <div class="flex items-start gap-4 p-3 rounded-lg bg-discovery-900/50 border border-discovery-700/30 hover:border-discovery-purple/30 transition-colors">
+                            <div class="mt-1 icon-excel">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 3v5h5"></path><text x="8" y="16" font-size="6" font-weight="bold" fill="currentColor" stroke="none">XLS</text></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-sm font-bold text-slate-200">Discovery Meeting Decisions & Action Log</h4>
+                                    <span class="text-[10px] text-slate-400 bg-discovery-800 px-2 py-1 rounded border border-discovery-700">Contributors: All members, Coordinator</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-snug">Meeting outcomes, decisions, action owners, due dates, dependencies, blockers, and follow-up status.</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Folder 1: Product Manager -->
+            <div class="border border-discovery-700/60 rounded-xl bg-discovery-800/30 overflow-hidden backdrop-blur-sm">
+                <div class="folder-header cursor-pointer p-4 flex items-center justify-between bg-discovery-800/50" onclick="toggleFolder('folder-1', this)">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-6 h-6 text-discovery-gold" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
+                        <h3 class="font-bold text-slate-200">Product Manager</h3>
+                        <span class="bg-discovery-900 text-xs text-slate-400 px-2 py-0.5 rounded-full border border-discovery-700">7 Files</span>
+                    </div>
+                    <svg class="chevron w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </div>
+                <div id="folder-1" class="folder-content">
+                    <div class="folder-inner p-4 pt-0 space-y-3">
+                        
+                        <!-- File 01 -->
+                        <div class="flex items-start gap-4 p-3 rounded-lg bg-discovery-900/50 border border-discovery-700/30 hover:border-discovery-gold/30 transition-colors">
+                            <div class="mt-1 icon-excel" title="Excel Register">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 3v5h5"></path><text x="8" y="16" font-size="6" font-weight="bold" fill="currentColor" stroke="none">XLS</text></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-sm font-bold text-slate-200">Discovery Questions Register</h4>
+                                    <span class="text-[10px] text-slate-400 bg-discovery-800 px-2 py-1 rounded border border-discovery-700">Contributors: Tech Owner, BD, Coordinator</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-snug">A documented list of questions the team must answer, linked to objectives and the evidence needed.</p>
+                            </div>
+                        </div>
+
+                        <!-- File 02 -->
+                        <div class="flex items-start gap-4 p-3 rounded-lg bg-discovery-900/50 border border-discovery-700/30 hover:border-discovery-gold/30 transition-colors">
+                            <div class="mt-1 icon-word" title="Word Document">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 3v5h5"></path><text x="7" y="16" font-size="6" font-weight="bold" fill="currentColor" stroke="none">DOC</text></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-sm font-bold text-slate-200">Discovery Objectives & Success Criteria</h4>
+                                    <span class="text-[10px] text-slate-400 bg-discovery-800 px-2 py-1 rounded border border-discovery-700">Contributors: All team members</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-snug">Clear learning objectives and criteria for deciding whether each question has been answered sufficiently.</p>
+                            </div>
+                        </div>
+
+                        <!-- File 03 -->
+                        <div class="flex items-start gap-4 p-3 rounded-lg bg-discovery-900/50 border border-discovery-700/30 hover:border-discovery-gold/30 transition-colors">
+                            <div class="mt-1 icon-word">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 3v5h5"></path><text x="7" y="16" font-size="6" font-weight="bold" fill="currentColor" stroke="none">DOC</text></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-sm font-bold text-slate-200">Agreed Discovery Scope & Guidelines</h4>
+                                    <span class="text-[10px] text-slate-400 bg-discovery-800 px-2 py-1 rounded border border-discovery-700">Contributors: All team members</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-snug">Documented in-scope items, exclusions, agreed working Guidelines, and the baseline used to check alignment.</p>
+                            </div>
+                        </div>
+
+                        <!-- File 08 -->
+                        <div class="flex items-start gap-4 p-3 rounded-lg bg-discovery-900/50 border border-discovery-700/30 hover:border-discovery-gold/30 transition-colors">
+                            <div class="mt-1 icon-word">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 3v5h5"></path><text x="7" y="16" font-size="6" font-weight="bold" fill="currentColor" stroke="none">DOC</text></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-sm font-bold text-slate-200">Candidate Product Requirements</h4>
+                                    <span class="text-[10px] text-slate-400 bg-discovery-800 px-2 py-1 rounded border border-discovery-700">Contributors: BD Lead, Tech Owner</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-snug">Candidate requirements derived from needs and evidence, with traceability to the need or Discovery question they address.</p>
+                            </div>
+                        </div>
+
+                        <!-- File 14 -->
+                        <div class="flex items-start gap-4 p-3 rounded-lg bg-discovery-900/50 border border-discovery-700/30 hover:border-discovery-gold/30 transition-colors">
+                            <div class="mt-1 icon-word">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 3v5h5"></path><text x="7" y="16" font-size="6" font-weight="bold" fill="currentColor" stroke="none">DOC</text></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-sm font-bold text-slate-200">Prioritized Product Requirements</h4>
+                                    <span class="text-[10px] text-slate-400 bg-discovery-800 px-2 py-1 rounded border border-discovery-700">Contributors: BD Lead, Tech Owner</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-snug">Prioritized requirements, including Must-haves, with rationale grounded in business evidence and technical constraints.</p>
+                            </div>
+                        </div>
+
+                        <!-- File 15 -->
+                        <div class="flex items-start gap-4 p-3 rounded-lg bg-discovery-900/50 border border-discovery-700/30 hover:border-discovery-gold/30 transition-colors">
+                            <div class="mt-1 icon-word">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 3v5h5"></path><text x="7" y="16" font-size="6" font-weight="bold" fill="currentColor" stroke="none">DOC</text></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-sm font-bold text-slate-200">Consolidated Discovery Findings & Recommendation</h4>
+                                    <span class="text-[10px] text-slate-400 bg-discovery-800 px-2 py-1 rounded border border-discovery-700">Contributors: Tech Owner, BD, Coordinator</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-snug">Integrated business and technical findings, major risks, open uncertainties, product implications, and a recommendation for the next step.</p>
+                            </div>
+                        </div>
+
+                        <!-- File 16 -->
+                        <div class="flex items-start gap-4 p-3 rounded-lg bg-discovery-900/50 border border-discovery-700/30 hover:border-discovery-gold/30 transition-colors">
+                            <div class="mt-1 icon-word">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 3v5h5"></path><text x="7" y="16" font-size="6" font-weight="bold" fill="currentColor" stroke="none">DOC</text></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-sm font-bold text-slate-200">Discovery Completion & Open Issues Review</h4>
+                                    <span class="text-[10px] text-slate-400 bg-discovery-800 px-2 py-1 rounded border border-discovery-700">Contributors: All team members</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-snug">Review of the agreed Discovery questions and objectives, evidence gaps, unresolved issues, and readiness for a proceed/revise/further-validate/stop decision.</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Folder 3: Technical Manager -->
+            <div class="border border-discovery-700/60 rounded-xl bg-discovery-800/30 overflow-hidden backdrop-blur-sm">
+                <div class="folder-header cursor-pointer p-4 flex items-center justify-between bg-discovery-800/50" onclick="toggleFolder('folder-3', this)">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-6 h-6 text-discovery-green" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
+                        <h3 class="font-bold text-slate-200">Technical Manager</h3>
+                        <span class="bg-discovery-900 text-xs text-slate-400 px-2 py-0.5 rounded-full border border-discovery-700">2 Files</span>
+                    </div>
+                    <svg class="chevron w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </div>
+                <div id="folder-3" class="folder-content">
+                    <div class="folder-inner p-4 pt-0 space-y-3">
+                        
+                        <!-- File 09 -->
+                        <div class="flex items-start gap-4 p-3 rounded-lg bg-discovery-900/50 border border-discovery-700/30 hover:border-discovery-green/30 transition-colors">
+                            <div class="mt-1 icon-word">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 3v5h5"></path><text x="7" y="16" font-size="6" font-weight="bold" fill="currentColor" stroke="none">DOC</text></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-sm font-bold text-slate-200">Technical Feasibility Investigation Plan</h4>
+                                    <span class="text-[10px] text-slate-400 bg-discovery-800 px-2 py-1 rounded border border-discovery-700">Contributors: Product Manager, Tech Research Contrib.</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-snug">Technical questions, investigation methods, task owners, expected evidence, and links to agreed Discovery objectives.</p>
+                            </div>
+                        </div>
+
+                        <!-- File 11 -->
+                        <div class="flex items-start gap-4 p-3 rounded-lg bg-discovery-900/50 border border-discovery-700/30 hover:border-discovery-green/30 transition-colors">
+                            <div class="mt-1 icon-word">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 3v5h5"></path><text x="7" y="16" font-size="6" font-weight="bold" fill="currentColor" stroke="none">DOC</text></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-sm font-bold text-slate-200">Technical Feasibility Study</h4>
+                                    <span class="text-[10px] text-slate-400 bg-discovery-800 px-2 py-1 rounded border border-discovery-700">Contributors: Tech Research Contrib., Product Manager</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-snug">Consolidated assessment of technical approaches, constraints, risks, dependencies, trade-offs, and evidence-based feasibility conclusions.</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Folder 2: Business Development -->
+            <div class="border border-discovery-700/60 rounded-xl bg-discovery-800/30 overflow-hidden backdrop-blur-sm">
+                <div class="folder-header cursor-pointer p-4 flex items-center justify-between bg-discovery-800/50" onclick="toggleFolder('folder-2', this)">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-6 h-6 text-discovery-orange" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
+                        <h3 class="font-bold text-slate-200">Business Development</h3>
+                        <span class="bg-discovery-900 text-xs text-slate-400 px-2 py-0.5 rounded-full border border-discovery-700">4 Files</span>
+                    </div>
+                    <svg class="chevron w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </div>
+                <div id="folder-2" class="folder-content">
+                    <div class="folder-inner p-4 pt-0 space-y-3">
+                        
+                        <!-- File 04 -->
+                        <div class="flex items-start gap-4 p-3 rounded-lg bg-discovery-900/50 border border-discovery-700/30 hover:border-discovery-orange/30 transition-colors">
+                            <div class="mt-1 icon-word">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 3v5h5"></path><text x="7" y="16" font-size="6" font-weight="bold" fill="currentColor" stroke="none">DOC</text></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-sm font-bold text-slate-200">Business Development & Market Validation Study</h4>
+                                    <span class="text-[10px] text-slate-400 bg-discovery-800 px-2 py-1 rounded border border-discovery-700">Contributors: Tech Owner, Tech Research Contrib.</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-snug">Structured findings on the market, customers, needs, alternatives, demand/value hypotheses, and commercial plausibility.</p>
+                            </div>
+                        </div>
+
+                        <!-- File 05 -->
+                        <div class="flex items-start gap-4 p-3 rounded-lg bg-discovery-900/50 border border-discovery-700/30 hover:border-discovery-orange/30 transition-colors">
+                            <div class="mt-1 icon-excel">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 3v5h5"></path><text x="8" y="16" font-size="6" font-weight="bold" fill="currentColor" stroke="none">XLS</text></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-sm font-bold text-slate-200">Customer Needs & Use Cases Register</h4>
+                                    <span class="text-[10px] text-slate-400 bg-discovery-800 px-2 py-1 rounded border border-discovery-700">Contributors: Product Manager</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-snug">Customer problems, needs, contexts of use, and use cases, with supporting evidence and unresolved questions.</p>
+                            </div>
+                        </div>
+
+                        <!-- File 06 -->
+                        <div class="flex items-start gap-4 p-3 rounded-lg bg-discovery-900/50 border border-discovery-700/30 hover:border-discovery-orange/30 transition-colors">
+                            <div class="mt-1 icon-word">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 3v5h5"></path><text x="7" y="16" font-size="6" font-weight="bold" fill="currentColor" stroke="none">DOC</text></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-sm font-bold text-slate-200">Competitor & Alternative Solutions Analysis</h4>
+                                    <span class="text-[10px] text-slate-400 bg-discovery-800 px-2 py-1 rounded border border-discovery-700">Contributors: Tech Research Contrib.</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-snug">Relevant competing products, substitutes, workarounds, and comparison criteria.</p>
+                            </div>
+                        </div>
+
+                        <!-- File 07 -->
+                        <div class="flex items-start gap-4 p-3 rounded-lg bg-discovery-900/50 border border-discovery-700/30 hover:border-discovery-orange/30 transition-colors">
+                            <div class="mt-1 icon-excel">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 3v5h5"></path><text x="8" y="16" font-size="6" font-weight="bold" fill="currentColor" stroke="none">XLS</text></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-sm font-bold text-slate-200">Market Validation Evidence & Assumptions Log</h4>
+                                    <span class="text-[10px] text-slate-400 bg-discovery-800 px-2 py-1 rounded border border-discovery-700">Contributors: Product Manager, Tech Owner</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-snug">Sources, observations, feedback, hypotheses, assumptions, limitations, evidence strength, and open commercial questions.</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Folder 5: Discovery Coordinator -->
+            <div class="border border-discovery-700/60 rounded-xl bg-discovery-800/30 overflow-hidden backdrop-blur-sm">
+                <div class="folder-header cursor-pointer p-4 flex items-center justify-between bg-discovery-800/50" onclick="toggleFolder('folder-5', this)">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-6 h-6 text-discovery-teal" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
+                        <h3 class="font-bold text-slate-200">Discovery Coordinator</h3>
+                        <span class="bg-discovery-900 text-xs text-slate-400 px-2 py-0.5 rounded-full border border-discovery-700">1 File</span>
+                    </div>
+                    <svg class="chevron w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </div>
+                <div id="folder-5" class="folder-content">
+                    <div class="folder-inner p-4 pt-0 space-y-3">
+                        
+                        <!-- File 12 -->
+                        <div class="flex items-start gap-4 p-3 rounded-lg bg-discovery-900/50 border border-discovery-700/30 hover:border-discovery-teal/30 transition-colors">
+                            <div class="mt-1 icon-excel">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 3v5h5"></path><text x="8" y="16" font-size="6" font-weight="bold" fill="currentColor" stroke="none">XLS</text></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-sm font-bold text-slate-200">Discovery Coordination & Alignment Log</h4>
+                                    <span class="text-[10px] text-slate-400 bg-discovery-800 px-2 py-1 rounded border border-discovery-700">Contributors: PM, Tech Owner, Project Manager</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-snug">Agreed baseline, observations of possible deviations, reported change requests, decisions, rationale, and follow-up actions.</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Folder 4: Technical Research Contributor -->
+            <div class="border border-discovery-700/60 rounded-xl bg-discovery-800/30 overflow-hidden backdrop-blur-sm">
+                <div class="folder-header cursor-pointer p-4 flex items-center justify-between bg-discovery-800/50" onclick="toggleFolder('folder-4', this)">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-6 h-6 text-discovery-blue" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
+                        <h3 class="font-bold text-slate-200">Technical Research Contributor</h3>
+                        <span class="bg-discovery-900 text-xs text-slate-400 px-2 py-0.5 rounded-full border border-discovery-700">1 File</span>
+                    </div>
+                    <svg class="chevron w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </div>
+                <div id="folder-4" class="folder-content">
+                    <div class="folder-inner p-4 pt-0 space-y-3">
+                        
+                        <!-- File 10 -->
+                        <div class="flex items-start gap-4 p-3 rounded-lg bg-discovery-900/50 border border-discovery-700/30 hover:border-discovery-blue/30 transition-colors">
+                            <div class="mt-1 icon-word">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 3v5h5"></path><text x="7" y="16" font-size="6" font-weight="bold" fill="currentColor" stroke="none">DOC</text></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="text-sm font-bold text-slate-200">Technical Research Findings</h4>
+                                    <span class="text-[10px] text-slate-400 bg-discovery-800 px-2 py-1 rounded border border-discovery-700">Contributors: Technical Owner</span>
+                                </div>
+                                <p class="text-xs text-slate-400 leading-snug">Findings for assigned tasks with sources, assumptions, limitations, constraints, risks, and unresolved technical questions; shared in a traceable form.</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Tab switching logic
+        function switchTab(tabId) {
+            const rolesView = document.getElementById('view-roles');
+            const outputsView = document.getElementById('view-outputs');
+            const tabRoles = document.getElementById('tab-roles');
+            const tabOutputs = document.getElementById('tab-outputs');
+
+            if (tabId === 'roles') {
+                rolesView.classList.remove('hidden');
+                rolesView.classList.add('block');
+                outputsView.classList.remove('block');
+                outputsView.classList.add('hidden');
+                
+                tabRoles.classList.add('active', 'text-slate-300');
+                tabRoles.classList.remove('text-slate-400');
+                tabOutputs.classList.remove('active', 'text-slate-300');
+                tabOutputs.classList.add('text-slate-400');
+            } else {
+                outputsView.classList.remove('hidden');
+                outputsView.classList.add('block');
+                rolesView.classList.remove('block');
+                rolesView.classList.add('hidden');
+                
+                tabOutputs.classList.add('active', 'text-slate-300');
+                tabOutputs.classList.remove('text-slate-400');
+                tabRoles.classList.remove('active', 'text-slate-300');
+                tabRoles.classList.add('text-slate-400');
+            }
+        }
+
+        // Folder toggle logic
+        function toggleFolder(folderId, headerElement) {
+            const folderContent = document.getElementById(folderId);
+            folderContent.classList.toggle('open');
+            headerElement.classList.toggle('open');
+        }
+    </script>
+</body>
+</html>
